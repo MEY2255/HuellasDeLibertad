@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Huellas de Libertad | Guía Ecoturística y App GPS de Senderismo en las Altas montañas</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              400: '#34d399',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+              950: '#022c22',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- FontAwesome Íconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Leaflet CSS y JS para Mapas Interactivos GPS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #022c22;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #16a34a;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #22c55e;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white custom-scrollbar" x-data="senderismoApp()" x-init="initMapaApp()">
+
+  <!-- BARRA DE NAVEGACIÓN PRINCIPAL -->
+  <header class="sticky top-0 z-40 backdrop-blur-xl bg-slate-950/85 border-b border-emerald-900/40 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- LOGO DE HUELLAS DE LIBERTAD -->
+      <a href="#inicio" class="flex items-center gap-3 group">
+        <div class="p-2.5 bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-800 rounded-2xl group-hover:scale-105 transition-transform shadow-[0_0_20px_rgba(16,185,129,0.4)] border border-emerald-400/40 flex-shrink-0">
+          
+
+        <!-- REEMPLAZO DEL ICONO SVG POR TU IMAGEN -->
+        <img src="Im/logo (3).png" alt="Logo Huellas en Libertad"
+          class="h-12 w-auto object-contain group-hover:scale-105 transition-transform">
+
+            <path d="M8 48L24 16L36 38L44 24L56 48H8Z" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M4 52L22 18L34 38" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="48" cy="14" r="4" fill="#fbbf24"/>
+            <path d="M10 54C20 50 26 56 36 50C44 45 52 48 58 44" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 3"/>
+            <circle cx="34" cy="36" r="2" fill="#ffffff"/>
+            <path d="M34 38V43M34 40L31 42M34 40L37 42M34 43L32 47M34 43L36 47" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <span class="text-xl font-black tracking-wider bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent block leading-none">HUELLAS DE LIBERTAD</span>
+          <span class="text-[10px] text-emerald-400/90 font-bold tracking-widest uppercase mt-1 block">Altas Montañas • Veracruz</span>
+        </div>
+      </a>
+
+      <!-- MENÚ DE NAVEGACIÓN DESKTOP -->
+      <nav class="hidden lg:flex items-center space-x-6 text-xs font-bold uppercase tracking-wider text-slate-300">
+        <a href="#inicio" class="hover:text-emerald-400 transition-colors">Inicio</a>
+        <a href="#filosofia" class="hover:text-emerald-400 transition-colors">Beneficios y Capas</a>
+        <a href="#app-mapa" class="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+          <i class="fa-solid fa-map-location-dot"></i> App GPS
+        </a>
+        <a href="#rutas" class="hover:text-emerald-400 transition-colors">Catálogo Rutas</a>
+        <a href="#herramientas" class="hover:text-emerald-400 transition-colors">Calculadora y Kit</a>
+      </nav>
+
+      <!-- BOTÓN ASESOR VIRTUAL -->
+      <button @click="wizardModal = true; wizardStep = 1" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.35)] transition-all transform hover:scale-105 border border-emerald-400/40 flex items-center gap-2">
+        <i class="fa-solid fa-compass text-amber-300"></i>
+        <span>Buscar Ruta Ideal</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- SECCIÓN HERO -->
+  <section id="inicio" class="relative min-h-[85vh] flex items-center justify-center overflow-hidden py-20 px-4 border-b border-slate-800">
+    <div class="absolute inset-0 z-0">
+      <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2000&q=80" referrerpolicy="no-referrer" alt="Altas Montañas Veracruz" class="w-full h-full object-cover filter brightness-[0.4] contrast-125 scale-105 transition-transform duration-1000">
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
+    </div>
+    
+    <div class="relative z-10 max-w-5xl mx-auto text-center space-y-6">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm font-black uppercase tracking-widest backdrop-blur-md shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+        <i class="fa-solid fa-mountain-sun text-amber-400"></i> Expediciones y Guía Ecoturística de Veracruz
+      </div>
+      
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white uppercase leading-tight">
+        Conquista los senderos de las <br class="hidden sm:inline">
+        <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">Altas Montañas</span>
+      </h1>
+      
+      <p class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto font-light leading-relaxed">
+        Explora senderos ancestrales, cañones volcánicos y bosques de niebla de la región de las altas montañas con mapas GPS estilo Wikiloc en tiempo real.
+      </p>
+
+      <div class="flex flex-wrap justify-center gap-4 pt-4">
+        <a href="#app-mapa" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all transform hover:-translate-y-1 flex items-center gap-3 border border-emerald-400/40">
+          <i class="fa-solid fa-location-arrow text-amber-300"></i> Abrir Visor GPS
+        </a>
+        <a href="#rutas" class="px-8 py-4 bg-slate-900/80 hover:bg-slate-800 text-white border border-emerald-500/30 font-bold text-xs sm:text-sm uppercase tracking-wider rounded-2xl backdrop-blur-md transition-all flex items-center gap-2">
+          <i class="fa-solid fa-list-ul text-emerald-400"></i> Explorar Catálogo
+        </a>
+      </div>
+
+      <!-- ESTADÍSTICAS RÁPIDAS -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mt-12 pt-8 border-t border-slate-800/80">
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-500/20 backdrop-blur-sm">
+          <span class="block text-2xl sm:text-3xl font-black text-emerald-400">23+</span>
+          <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Rutas Mapeadas</span>
+        </div>
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-500/20 backdrop-blur-sm">
+          <span class="block text-2xl sm:text-3xl font-black text-emerald-400">5,636m</span>
+          <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Altitud Máxima</span>
+        </div>
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-500/20 backdrop-blur-sm">
+          <span class="block text-2xl sm:text-3xl font-black text-emerald-400">4 Niveles</span>
+          <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Dificultad</span>
+        </div>
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-500/20 backdrop-blur-sm">
+          <span class="block text-2xl sm:text-3xl font-black text-emerald-400">100%</span>
+          <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Ecoturismo</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN: FILOSOFÍA, BENEFICIOS Y REGLA DE LAS 3 CAPAS -->
+  <section id="filosofia" class="py-24 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-black uppercase tracking-widest text-emerald-400 block mb-2">Filosofía Huellas de Libertad</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight mb-4">¿Qué es el Senderismo y por qué practicarlo?</h2>
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+          El senderismo en la región central de Veracruz conecta cuerpo y mente con la naturaleza. Caminar entre bosques de niebla, ríos de montaña y cañadas estimula el bienestar integral y fomenta el respeto por el patrimonio ecológico local.
+        </p>
+      </div>
+
+      <!-- GRID DE BENEFICIOS -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+        <div class="bg-slate-950/80 p-8 rounded-3xl border border-emerald-500/20 shadow-2xl group hover:border-emerald-500/50 transition-all duration-300">
+          <div class="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-heart-pulse"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">Salud Cardiovascular y Muscular</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Fortalece el corazón, mejora la capacidad pulmonar y tonifica piernas gracias a la constante actividad aeróbica y los desniveles naturales.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/80 p-8 rounded-3xl border border-emerald-500/20 shadow-2xl group hover:border-emerald-500/50 transition-all duration-300">
+          <div class="w-14 h-14 bg-teal-500/10 text-teal-400 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">Bienestar Mental y Desconexión</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Estar en contacto con la naturaleza reduce el cortisol (estrés), despeja la mente de la rutina urbana y estimula la creatividad y concentración.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/80 p-8 rounded-3xl border border-emerald-500/20 shadow-2xl group hover:border-emerald-500/50 transition-all duration-300">
+          <div class="w-14 h-14 bg-cyan-500/10 text-cyan-400 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-tree"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-3">Conciencia Ambiental</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Promueve el turismo responsable sin dejar huella ecológica, apoyando la conservación de manantiales, ahuehuetes centenarios y flora autóctona.
+          </p>
+        </div>
+      </div>
+
+      <!-- INTERACTIVO: REGLA DE LAS 3 CAPAS -->
+      <div class="grid lg:grid-cols-2 gap-12 items-center bg-slate-950 p-8 rounded-3xl border border-slate-800 shadow-2xl">
+        <div>
+          <span class="text-emerald-400 font-bold uppercase tracking-wider text-xs">Fundamentos de Equipamiento</span>
+          <h3 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 mb-4">La Regla de las 3 Capas de Vestimenta</h3>
+          <p class="text-slate-300 leading-relaxed text-xs sm:text-sm mb-6">
+            El clima en las Altas Montañas puede pasar de sol radiante a niebla densa y lluvia fría en cuestión de minutos. Adaptarse mediante capas de ropa es fundamental para mantenerse seco y prevenir la hipotermia.
+          </p>
+          <div class="flex items-center gap-3 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-xs text-emerald-300">
+            <i class="fa-solid fa-lightbulb text-lg text-amber-400 shrink-0"></i>
+            <span><strong>Regla de oro:</strong> ¡Evita el algodón! Retiene el sudor, tarda horas en secar y enfría el cuerpo rápidamente.</span>
+          </div>
+        </div>
+
+        <!-- Visor Interactivo Alpine -->
+        <div class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl" x-data="{ capaActiva: 1 }">
+          <div class="flex items-center justify-between mb-6">
+            <h4 class="text-base font-bold text-white"><i class="fa-solid fa-shirt text-emerald-400 mr-2"></i> Capas Técnicas</h4>
+            <span class="text-xs text-emerald-400 font-semibold uppercase">Sistema Térmico</span>
+          </div>
+
+          <div class="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6 text-xs font-bold">
+            <button @click="capaActiva = 1" :class="capaActiva === 1 ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'" class="flex-1 py-2 rounded-xl transition-all">1ª Capa (Seco)</button>
+            <button @click="capaActiva = 2" :class="capaActiva === 2 ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'" class="flex-1 py-2 rounded-xl transition-all">2ª Capa (Calor)</button>
+            <button @click="capaActiva = 3" :class="capaActiva === 3 ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'" class="flex-1 py-2 rounded-xl transition-all">3ª Capa (Protección)</button>
+          </div>
+
+          <div x-show="capaActiva === 1" x-transition>
+            <h5 class="text-emerald-400 font-bold text-sm mb-1">1ª Capa: Interior / Transpirable</h5>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">Evacúa el sudor de la piel para mantener el cuerpo seco durante la marcha intensa.</p>
+            <span class="inline-block px-3 py-1.5 bg-slate-950 rounded-lg text-[11px] text-slate-300 border border-slate-800">Recomendado: Playeras sintéticas dry-fit de poliéster o lana merino.</span>
+          </div>
+
+          <div x-show="capaActiva === 2" x-transition>
+            <h5 class="text-emerald-400 font-bold text-sm mb-1">2ª Capa: Intermedia / Aislante</h5>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">Retiene el calor corporal que genera el cuerpo impidiendo que se enfríe en descansos.</p>
+            <span class="inline-block px-3 py-1.5 bg-slate-950 rounded-lg text-[11px] text-slate-300 border border-slate-800">Recomendado: Forro polar (fleece) ligero o chamarra térmica compacta.</span>
+          </div>
+
+          <div x-show="capaActiva === 3" x-transition>
+            <h5 class="text-emerald-400 font-bold text-sm mb-1">3ª Capa: Exterior / Protecciones</h5>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">Bloquea el viento helado y la humedad de la lluvia o niebla de las montañas.</p>
+            <span class="inline-block px-3 py-1.5 bg-slate-950 rounded-lg text-[11px] text-slate-300 border border-slate-800">Recomendado: Chamarra impermeables/cortavientos con membranas tipo Gore-Tex.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- APP GPS INTERACTIVA ESTILO WIKILOC CON MAPAS LEAFLET -->
+  <section id="app-mapa" class="py-20 bg-slate-950 text-white border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-4">
+        <div>
+          <span class="text-emerald-400 font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Visor de Trayectos GPS Interactivo
+          </span>
+          <h2 class="text-3xl font-extrabold mt-1">Navegador Ecoturístico Estilo Wikiloc</h2>
+          <p class="text-slate-400 text-sm mt-1">Explora trazados satelitales, perfiles de elevación y descarga archivos GPX para tu celular.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Selector de Capas -->
+          <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex text-xs font-semibold">
+            <button @click="cambiarCapaMapa('osm')" :class="capaMapa === 'osm' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'" class="px-3 py-1.5 rounded-lg transition-all">Mapa</button>
+            <button @click="cambiarCapaMapa('satelite')" :class="capaMapa === 'satelite' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'" class="px-3 py-1.5 rounded-lg transition-all">Satelital</button>
+            <button @click="cambiarCapaMapa('topo')" :class="capaMapa === 'topo' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'" class="px-3 py-1.5 rounded-lg transition-all">Topográfico</button>
+          </div>
+
+          <!-- Selector de Ruta Activa -->
+          <select x-model="rutaMapaSeleccionadaId" @change="cambiarRutaMapa()" class="bg-slate-900 border border-emerald-500/50 text-emerald-300 font-bold text-xs sm:text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <template x-for="r in rutasConGps" :key="r.id">
+              <option :value="r.id" x-text="r.nombre + ' (' + r.municipio + ')'"></option>
+            </template>
+          </select>
+        </div>
+      </div>
+
+      <!-- CONTENEDOR PRINCIPAL MAPA Y TELEMETRÍA -->
+      <div class="bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl grid lg:grid-cols-3">
+        
+        <!-- Panel Izquierdo: Telemetría -->
+        <div class="p-6 lg:p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-900/90">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" x-text="rutaMapaActual.categoriaTexto"></span>
+              <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-location-dot text-emerald-400"></i> <span x-text="rutaMapaActual.municipio"></span></span>
+            </div>
+            
+            <h3 class="text-2xl font-bold text-white mb-2" x-text="rutaMapaActual.nombre"></h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6" x-text="rutaMapaActual.descripcion"></p>
+
+            <!-- Estadísticas Técnicas -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+              <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Distancia Total</span>
+                <span class="text-lg font-black text-emerald-400" x-text="rutaMapaActual.stats.distancia"></span>
+              </div>
+              <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Desnivel Positivo</span>
+                <span class="text-lg font-black text-emerald-400" x-text="rutaMapaActual.stats.desnivel"></span>
+              </div>
+              <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Dificultad</span>
+                <span class="text-sm font-bold text-slate-200" x-text="rutaMapaActual.stats.dificultad"></span>
+              </div>
+              <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Tiempo Est.</span>
+                <span class="text-sm font-bold text-slate-200" x-text="rutaMapaActual.stats.tiempo"></span>
+              </div>
+            </div>
+
+            <!-- Gráfico SVG Altimétrico -->
+            <div class="mb-6 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+              <div class="flex justify-between items-center text-[10px] text-slate-400 font-bold mb-2 uppercase">
+                <span><i class="fa-solid fa-chart-area text-emerald-400"></i> Perfil Altimétrico</span>
+                <span x-text="'Alt. Máx: ' + rutaMapaActual.stats.altitudMax"></span>
+              </div>
+              <svg class="w-full h-20 text-emerald-500 overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="gradientePerfil" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.6"/>
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <polygon :points="rutaMapaActual.elevationPoints" fill="url(#gradientePerfil)" />
+                <polyline :points="rutaMapaActual.elevationPolyline" fill="none" stroke="#34d399" stroke-width="2" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="space-y-2.5">
+            <button @click="abrirModalPorId(rutaMapaActual.id)" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-circle-info"></i> Ficha Técnica Completa
+            </button>
+            <a :href="'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(rutaMapaActual.gpsTrack))" :download="rutaMapaActual.nombre + '-HuellasDeLibertad.gpx'" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold rounded-xl text-xs border border-slate-700 transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-file-arrow-down text-emerald-400"></i> Descargar Track GPX
+            </a>
+          </div>
+        </div>
+
+        <!-- Panel Derecho: Mapa Leaflet -->
+        <div class="lg:col-span-2 relative min-h-[420px] lg:min-h-[560px]">
+          <div id="mapa-wikiloc" class="w-full h-full z-10 bg-slate-950"></div>
+          
+          <div class="absolute top-4 right-4 z-20 bg-slate-900/90 backdrop-blur-md p-2.5 rounded-2xl border border-slate-700 text-xs text-slate-300 flex items-center gap-2 shadow-2xl">
+            <i class="fa-solid fa-satellite text-emerald-400"></i>
+            <span class="font-bold" x-text="'Capa ' + capaMapa.toUpperCase()"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CATÁLOGO COMPLETO DE RUTAS CON BUSCADOR -->
+  <section id="rutas" class="py-20 bg-slate-950 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+        <div>
+          <span class="text-emerald-400 font-bold uppercase tracking-wider text-xs">Catálogo de Expediciones</span>
+          <h2 class="text-3xl font-extrabold mt-1">Rutas de las Altas Montañas</h2>
+          <p class="text-slate-400 text-sm mt-1">Explora las 23 rutas documentadas clasificadas por nivel de exigencia física.</p>
+        </div>
+
+        <!-- Buscador -->
+        <div class="relative w-full md:w-80">
+          <input type="text" x-model="busqueda" placeholder="Buscar por ruta o municipio..." class="w-full bg-slate-900 border border-slate-800 text-white text-xs rounded-2xl px-4 py-3.5 pl-10 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-4 text-slate-500 text-xs"></i>
+        </div>
+      </div>
+
+      <!-- Filtros por Categoría -->
+      <div class="flex flex-wrap gap-2.5 mb-10">
+        <button @click="filtro = 'todas'" :class="filtro === 'todas' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Todas (23)</button>
+        <button @click="filtro = 'principiante'" :class="filtro === 'principiante' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Principiantes</button>
+        <button @click="filtro = 'rios'" :class="filtro === 'rios' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Ríos y Cascadas</button>
+        <button @click="filtro = 'intermedio'" :class="filtro === 'intermedio' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Intermedio</button>
+        <button @click="filtro = 'avanzado'" :class="filtro === 'avanzado' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Alta Montaña</button>
+      </div>
+
+      <!-- Grid de Tarjetas -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="ruta in rutasFiltradas" :key="ruta.id">
+          <div class="bg-slate-900 rounded-3xl overflow-hidden border border-slate-800/80 shadow-xl flex flex-col hover:border-emerald-500/50 transition-all group">
+            <div class="relative h-52 overflow-hidden">
+              <img :src="ruta.imagen" referrerpolicy="no-referrer" :alt="ruta.nombre" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              
+              <span class="absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-md" 
+                    :class="{
+                      'bg-emerald-500/90 text-white': ruta.categoria === 'principiante',
+                      'bg-sky-500/90 text-white': ruta.categoria === 'rios',
+                      'bg-amber-500/90 text-white': ruta.categoria === 'intermedio',
+                      'bg-rose-600/90 text-white': ruta.categoria === 'avanzado'
+                    }" x-text="ruta.categoriaTexto"></span>
+            </div>
+            
+            <div class="p-6 flex-1 flex flex-col justify-between">
+              <div>
+                <span class="text-[11px] text-emerald-400 font-bold uppercase tracking-wider" x-text="ruta.municipio"></span>
+                <h3 class="text-xl font-bold mt-1 mb-2 text-white group-hover:text-emerald-300 transition-colors" x-text="ruta.nombre"></h3>
+                <p class="text-slate-400 text-xs line-clamp-3 leading-relaxed mb-6" x-text="ruta.descripcion"></p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button @click="abrirModal(ruta)" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-2 border border-slate-700">
+                  <i class="fa-solid fa-circle-info"></i> Detalle
+                </button>
+                <button @click="cargarEnMapaApp(ruta)" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md">
+                  <i class="fa-solid fa-map-location-dot"></i> GPS
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <!-- HERRAMIENTAS INTERACTIVAS: CALCULADORA + CHECKLIST -->
+  <section id="herramientas" class="py-20 bg-slate-900 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-emerald-400 font-bold uppercase tracking-wider text-xs">Herramientas de Expedición</span>
+        <h2 class="text-3xl font-extrabold text-white mt-1">Calculadora de Hidratación y Equipamiento</h2>
+        <p class="text-slate-400 text-sm mt-2">Planifica requerimientos de agua, energía y asegura llevar todo en tu mochila.</p>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-10">
+        
+        <!-- CALCULADORA DE HIDRATACIÓN -->
+        <div class="bg-slate-950 p-8 rounded-3xl border border-slate-800 shadow-xl">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-3 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20">
+              <i class="fa-solid fa-droplet text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-white">Calculadora Biológica</h3>
+              <p class="text-xs text-slate-400">Estima litros de agua y calorías requeridas.</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs font-semibold">
+            <div>
+              <label class="text-slate-300 block mb-1">Peso Corporal (kg): <span class="text-emerald-400 font-bold" x-text="calcPeso + ' kg'"></span></label>
+              <input type="range" min="40" max="120" x-model="calcPeso" class="w-full accent-emerald-500">
+            </div>
+
+            <div>
+              <label class="text-slate-300 block mb-1">Horas de Marcha Estimadas: <span class="text-emerald-400 font-bold" x-text="calcHoras + ' h'"></span></label>
+              <input type="range" min="1" max="12" x-model="calcHoras" class="w-full accent-emerald-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+              <div>
+                <label class="text-slate-300 block mb-1">Temperatura Clima</label>
+                <select x-model="calcTemperatura" class="w-full bg-slate-900 border border-slate-800 text-slate-200 rounded-xl p-2.5">
+                  <option value="fresco">Fresco / Templado (&lt;20°C)</option>
+                  <option value="caluroso">Cálido / Húmedo (&gt;25°C)</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-slate-300 block mb-1">Exigencia de Terreno</label>
+                <select x-model="calcInclinacion" class="w-full bg-slate-900 border border-slate-800 text-slate-200 rounded-xl p-2.5">
+                  <option value="plano">Plano / Sendero suave</option>
+                  <option value="moderado">Pendiente Moderada</option>
+                  <option value="alta">Alta Montaña / Desnivel</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-6 p-4 bg-slate-900 rounded-2xl border border-slate-800 grid grid-cols-2 gap-4 text-center">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Agua Mínima</span>
+                <span class="text-2xl font-black text-blue-400" x-text="resultadoLitros + ' Litros'"></span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Gasto Calórico Est.</span>
+                <span class="text-2xl font-black text-amber-400" x-text="resultadoCalorias + ' kcal'"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHECKLIST DE MOCHILA -->
+        <div class="bg-slate-950 p-8 rounded-3xl border border-slate-800 shadow-xl">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
+                <i class="fa-solid fa-list-check text-xl"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-white">Checklist de Equipamiento</h3>
+                <p class="text-xs text-slate-400">Verifica tus elementos esenciales antes de salir.</p>
+              </div>
+            </div>
+            
+            <div class="text-right">
+              <span class="text-2xl font-black text-emerald-400" x-text="porcentajeChecklist + '%'"></span>
+            </div>
+          </div>
+
+          <div class="w-full bg-slate-900 rounded-full h-2 mb-6 overflow-hidden border border-slate-800">
+            <div class="bg-emerald-500 h-full transition-all duration-300" :style="'width: ' + porcentajeChecklist + '%'"></div>
+          </div>
+
+          <div class="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
+            <template x-for="(item, index) in equipo" :key="index">
+              <label class="flex items-center p-3 bg-slate-900 rounded-2xl border border-slate-800 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                <input type="checkbox" x-model="item.chequeado" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 border-slate-700 bg-slate-950">
+                <span class="ml-3 text-xs font-semibold text-slate-300" :class="{ 'line-through text-slate-500': item.chequeado }" x-text="item.nombre"></span>
+              </label>
+            </template>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- MODAL WIZARD: BUSCAR RUTA IDEAL -->
+  <div x-show="wizardModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4" x-cloak x-transition>
+    <div class="bg-slate-900 text-white rounded-3xl max-w-xl w-full border border-slate-800 overflow-hidden shadow-2xl p-8 relative" @click.away="wizardModal = false">
+      <button @click="wizardModal = false" class="absolute top-6 right-6 text-slate-400 hover:text-white text-xl">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 block mb-1">Asistente Interactivo</span>
+      <h3 class="text-2xl font-black mb-6">Encuentra tu Ruta Ideal en Veracruz</h3>
+
+      <!-- Paso 1 -->
+      <div x-show="wizardStep === 1">
+        <p class="text-sm text-slate-300 font-semibold mb-4">Paso 1: ¿Cuál es tu experiencia o preferencia?</p>
+        <div class="space-y-3">
+          <button @click="wizardData.nivel = 'principiante'; wizardStep = 2" class="w-full text-left p-4 rounded-2xl bg-slate-800 hover:bg-emerald-950/50 hover:border-emerald-500/50 border border-slate-700 transition-all flex items-center justify-between">
+            <div>
+              <span class="font-bold text-sm block">Principiante / Paseo Familiar</span>
+              <span class="text-xs text-slate-400">Senderos planos y poco desnivel.</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-500"></i>
+          </button>
+          <button @click="wizardData.nivel = 'rios'; wizardStep = 2" class="w-full text-left p-4 rounded-2xl bg-slate-800 hover:bg-emerald-950/50 hover:border-emerald-500/50 border border-slate-700 transition-all flex items-center justify-between">
+            <div>
+              <span class="font-bold text-sm block">Ríos y Cascadas</span>
+              <span class="text-xs text-slate-400">Caminatas junto a manantiales y caídas de agua.</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-500"></i>
+          </button>
+          <button @click="wizardData.nivel = 'intermedio'; wizardStep = 2" class="w-full text-left p-4 rounded-2xl bg-slate-800 hover:bg-emerald-950/50 hover:border-emerald-500/50 border border-slate-700 transition-all flex items-center justify-between">
+            <div>
+              <span class="font-bold text-sm block">Intermedio / Montañismo Ligero</span>
+              <span class="text-xs text-slate-400">Ascensos a cerros y caminatas de 3 a 5 horas.</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-500"></i>
+          </button>
+          <button @click="wizardData.nivel = 'avanzado'; wizardStep = 2" class="w-full text-left p-4 rounded-2xl bg-slate-800 hover:bg-emerald-950/50 hover:border-emerald-500/50 border border-slate-700 transition-all flex items-center justify-between">
+            <div>
+              <span class="font-bold text-sm block">Avanzado / Alta Montaña</span>
+              <span class="text-xs text-slate-400">Exigencia física alta y terrenos técnicos.</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-500"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 2 -->
+      <div x-show="wizardStep === 2">
+        <p class="text-sm text-slate-300 font-semibold mb-4">Paso 2: ¿Cuánto tiempo planeas dedicarle?</p>
+        <div class="space-y-3">
+          <button @click="wizardData.tiempo = 'corto'; calcularRecomendaciones()" class="w-full text-left p-4 rounded-2xl bg-slate-800 hover:bg-emerald-950/50 border border-slate-700 transition-all">
+            <span class="font-bold text-sm block">1 a 2 Horas</span>
+            <span class="text-xs text-slate-400">Recorrido corto y accesible.</span>
+          </button>
+          <button @click="wizardData.tiempo = 'medio'; calcularRecomendaciones()" class="w-full text-left p-4 rounded-2xl bg-slate-800 hover:bg-emerald-950/50 border border-slate-700 transition-all">
+            <span class="font-bold text-sm block">3 a 5 Horas</span>
+            <span class="text-xs text-slate-400">Media jornada en la naturaleza.</span>
+          </button>
+          <button @click="wizardData.tiempo = 'largo'; calcularRecomendaciones()" class="w-full text-left p-4 rounded-2xl bg-slate-800 hover:bg-emerald-950/50 border border-slate-700 transition-all">
+            <span class="font-bold text-sm block">Jornada Completa (+6 Horas)</span>
+            <span class="text-xs text-slate-400">Expedición prolongada.</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 3 -->
+      <div x-show="wizardStep === 3">
+        <p class="text-sm text-slate-300 font-semibold mb-4">¡Rutas recomendadas para ti!</p>
+        <div class="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+          <template x-for="r in wizardResultados" :key="r.id">
+            <div class="p-3.5 bg-slate-800/80 rounded-2xl border border-slate-700 flex items-center justify-between">
+              <div>
+                <span class="font-bold text-sm text-emerald-300 block" x-text="r.nombre"></span>
+                <span class="text-xs text-slate-400" x-text="r.municipio + ' • ' + r.categoriaTexto"></span>
+              </div>
+              <button @click="wizardModal = false; abrirModal(r)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all">
+                Ver Detalles
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLES FICHA TÉCNICA -->
+  <div x-show="modalAbierto" class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4" x-cloak x-transition>
+    <div class="bg-slate-900 text-white rounded-3xl max-w-2xl w-full border border-slate-800 overflow-hidden shadow-2xl relative" @click.away="modalAbierto = false">
+      <template x-if="rutaSeleccionada">
+        <div>
+          <div class="relative h-64">
+            <img :src="rutaSeleccionada.imagen" referrerpolicy="no-referrer" :alt="rutaSeleccionada.nombre" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+            <button @click="modalAbierto = false" class="absolute top-4 right-4 w-9 h-9 bg-slate-950/80 rounded-full flex items-center justify-center text-white hover:bg-slate-800 border border-slate-700">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          
+          <div class="p-8">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-emerald-400 text-xs font-bold uppercase tracking-wider" x-text="rutaSeleccionada.municipio"></span>
+              <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" x-text="rutaSeleccionada.categoriaTexto"></span>
+            </div>
+            
+            <h3 class="text-2xl font-bold mb-4" x-text="rutaSeleccionada.nombre"></h3>
+            
+            <p class="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6" x-text="rutaSeleccionada.descripcion"></p>
+
+            <h4 class="font-bold text-emerald-400 text-xs uppercase mb-3">Puntos Clave de la Excursión:</h4>
+            <ul class="space-y-2 mb-8">
+              <template x-for="(punto, idx) in rutaSeleccionada.puntos" :key="idx">
+                <li class="flex items-start text-xs text-slate-300">
+                  <i class="fa-solid fa-check text-emerald-400 mr-3 mt-0.5 shrink-0"></i>
+                  <span x-text="punto"></span>
+                </li>
+              </template>
+            </ul>
+
+            <div class="flex flex-wrap justify-end gap-3">
+              <button @click="cargarEnMapaApp(rutaSeleccionada)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition-colors flex items-center gap-2 shadow-lg">
+                <i class="fa-solid fa-map-location-dot"></i> Abrir en Mapa GPS
+              </button>
+              <button @click="modalAbierto = false" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs transition-colors border border-slate-700">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- PIE DE PÁGINA (FOOTER) -->
+  <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+      <div class="flex justify-center items-center gap-3 mb-3">
+        <div class="p-1.5 bg-emerald-600 rounded-lg text-white">
+
+          <img src="Im/logo (3).png" alt="Logo Huellas en Libertad"
+          class="h-12 w-auto object-contain group-hover:scale-105 transition-transform">
+         
+        </div>
+        <span class="text-white font-black tracking-wider text-xl">HUELLAS DE LIBERTAD</span>
+      </div>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">Promoviendo el ecoturismo responsable, la conservación ambiental y el senderismo seguro en las Altas Montañas de Veracruz.</p>
+      <p class="text-[11px] text-slate-600 mt-4">© 2026 Huellas de Libertad — Veracruz, México.</p>
+    </div>
+  </footer>
+
+  <!-- LÓGICA ALPINE.JS + LEAFLET -->
+  <script>
+    let leafletMapInstance = null;
+    let currentPolyline = null;
+    let currentMarkers = [];
+    let tileLayers = {};
+
+    function senderismoApp() {
+      return {
+        filtro: 'todas',
+        busqueda: '',
+        modalAbierto: false,
+        rutaSeleccionada: null,
+        rutaMapaSeleccionadaId: 3,
+        capaMapa: 'osm',
+
+        // Asistente Virtual
+        wizardModal: false,
+        wizardStep: 1,
+        wizardData: { nivel: '', tiempo: '' },
+        wizardResultados: [],
+
+        // Calculadora de Hidratación
+        calcPeso: 70,
+        calcHoras: 3,
+        calcTemperatura: 'fresco',
+        calcInclinacion: 'moderado',
+
+        get resultadoLitros() {
+          let base = (this.calcHoras * 0.5) * (this.calcPeso / 70);
+          if (this.calcTemperatura === 'caluroso') base *= 1.3;
+          if (this.calcInclinacion === 'alta') base *= 1.25;
+          return base.toFixed(1);
+        },
+
+        get resultadoCalorias() {
+          let factor = 350;
+          if (this.calcInclinacion === 'moderado') factor = 480;
+          if (this.calcInclinacion === 'alta') factor = 650;
+          return Math.round(this.calcHoras * factor * (this.calcPeso / 70));
+        },
+
+        // Equipamiento Checklist
+        equipo: [
+          { nombre: 'Calzado antiderrapante (Botas / Tenis Trail)', chequeado: true },
+          { nombre: 'Agua suficiente (Mínimo 1.5 a 2 Litros)', chequeado: true },
+          { nombre: 'Snacks energéticos (Frutos secos, barras)', chequeado: false },
+          { nombre: 'Capa impermeable / Cortavientos Ligero', chequeado: true },
+          { nombre: 'Protector solar, gorra y lentes', chequeado: false },
+          { nombre: 'Botiquín de primeros auxilios completo', chequeado: true },
+          { nombre: 'Teléfono cargado con mapa offline GPX', chequeado: true },
+          { nombre: 'Lámpara frontal con baterías de repuesto', chequeado: false }
+        ],
+
+        get porcentajeChecklist() {
+          const total = this.equipo.length;
+          const marcados = this.equipo.filter(e => e.chequeado).length;
+          return Math.round((marcados / total) * 100);
+        },
+
+        // Rutas Mapeadas con GPS para el Visor Leaflet
+        rutasConGps: [
+          {
+            id: 3,
+            nombre: 'Cerro del Borrego',
+            municipio: 'Orizaba',
+            categoriaTexto: 'Principiante',
+            descripcion: 'Ascenso histórico por escalones de piedra con el mirador Atalaya de Cristal en la cumbre.',
+            stats: { distancia: '2.4 km', desnivel: '+280 m', dificultad: 'Fácil', tiempo: '1h 20m', altitudMax: '1,540m' },
+            center: [18.8525, -97.1065],
+            elevationPoints: '0,40 25,30 50,18 75,10 100,5 100,40 0,40',
+            elevationPolyline: '0,40 25,30 50,18 75,10 100,5',
+            gpsTrack: [
+              [18.8488, -97.1040],
+              [18.8505, -97.1052],
+              [18.8520, -97.1060],
+              [18.8542, -97.1075]
+            ],
+            waypoints: [
+              { lat: 18.8488, lng: -97.1040, title: 'Inicio: Base Ecoparque' },
+              { lat: 18.8542, lng: -97.1075, title: 'Mirador Atalaya de Cristal' }
+            ]
+          },
+          {
+            id: 2,
+            nombre: 'Barranca de Metlac',
+            municipio: 'Fortín / Ixtaczoquitlán',
+            categoriaTexto: 'Principiante',
+            descripcion: 'Caminata sobre antiguas vías férreas del siglo XIX cruzando puentes y túneles de piedra.',
+            stats: { distancia: '6.0 km', desnivel: '+60 m', dificultad: 'Muy Fácil', tiempo: '2h 15m', altitudMax: '1,020m' },
+            center: [18.8950, -97.0250],
+            elevationPoints: '0,35 30,32 60,30 100,28 100,40 0,40',
+            elevationPolyline: '0,35 30,32 60,30 100,28',
+            gpsTrack: [
+              [18.8910, -97.0310],
+              [18.8935, -97.0270],
+              [18.8960, -97.0230],
+              [18.8985, -97.0190]
+            ],
+            waypoints: [
+              { lat: 18.8910, lng: -97.0310, title: 'Estación Sumidero' },
+              { lat: 18.8985, lng: -97.0190, title: 'Puente Antiguo Metlac' }
+            ]
+          },
+          {
+            id: 14,
+            nombre: 'Sótano y Cascada de Popocatl',
+            municipio: 'Zongolica',
+            categoriaTexto: 'Intermedio',
+            descripcion: 'Descenso por barranca boscosa hasta una gran cueva subterránea donde cae una cascada de 60m.',
+            stats: { distancia: '5.2 km', desnivel: '+340 m', dificultad: 'Intermedio', tiempo: '3h 30m', altitudMax: '1,350m' },
+            center: [18.6750, -96.9950],
+            elevationPoints: '0,10 30,18 60,32 100,38 100,40 0,40',
+            elevationPolyline: '0,10 30,18 60,32 100,38',
+            gpsTrack: [
+              [18.6790, -96.9910],
+              [18.6770, -96.9930],
+              [18.6750, -96.9950],
+              [18.6730, -96.9970]
+            ],
+            waypoints: [
+              { lat: 18.6790, lng: -96.9910, title: 'Entrada al Sendero' },
+              { lat: 18.6730, lng: -96.9970, title: 'Boca del Sótano Popocatl' }
+            ]
+          },
+          {
+            id: 23,
+            nombre: 'Refugio Fausto González (Pico Orizaba)',
+            municipio: 'La Perla / Calcahualco',
+            categoriaTexto: 'Avanzado',
+            descripcion: 'Ruta de alta montaña en la cara sur del volcán Citlaltépetl a más de 4,400 metros de altitud.',
+            stats: { distancia: '12.5 km', desnivel: '+1,300 m', dificultad: 'Alta Montaña', tiempo: '10h 00m', altitudMax: '4,660m' },
+            center: [19.0300, -97.2700],
+            elevationPoints: '0,38 25,28 50,18 75,8 100,2 100,40 0,40',
+            elevationPolyline: '0,38 25,28 50,18 75,8 100,2',
+            gpsTrack: [
+              [19.0080, -97.2680],
+              [19.0180, -97.2690],
+              [19.0250, -97.2700],
+              [19.0305, -97.2700]
+            ],
+            waypoints: [
+              { lat: 19.0080, lng: -97.2680, title: 'Valle de Hidalgo' },
+              { lat: 19.0305, lng: -97.2700, title: 'Refugio Fausto González' }
+            ]
+          }
+        ],
+
+        get rutaMapaActual() {
+          return this.rutasConGps.find(r => r.id == this.rutaMapaSeleccionadaId) || this.rutasConGps[0];
+        },
+
+        // CATÁLOGO COMPLETO DE RUTAS
+        rutas: [
+          { id: 1, nombre: 'Paseo del Río Orizaba', categoria: 'principiante', categoriaTexto: 'Principiante', municipio: 'Orizaba', imagen: 'Im/imagen1.jpg', descripcion: 'Trayecto pavimentado junto al río con reserva animal, puentes coloniales e iluminación.', puntos: ['Terreno 100% plano y seguro.', 'Reserva animal en el recorrido.', 'Ideal para familias e infantes.'] },
+          { id: 2, nombre: 'Barranca de Metlac', categoria: 'principiante', categoriaTexto: 'Principiante', municipio: 'Fortín / Ixtaczoquitlán', imagen: 'https://oem.com.mx/elsoldecordoba/img/27316684/1765985637/BASE_LANDSCAPE/480/image.webp', descripcion: 'Caminata llana sobre las antiguas vías férreas cruzando túneles históricos de piedra.', puntos: ['Bosque húmedo sombreado.', 'Paso por puentes históricos.', 'Baja exigencia física.'] },
+          { id: 3, nombre: 'Cerro del Borrego', categoria: 'principiante', categoriaTexto: 'Principiante', municipio: 'Orizaba', imagen: 'im/Imagen8.jpg', descripcion: 'Ascenso con escalones de piedra hacia la cima con mirador Atalaya de Cristal.', puntos: ['1.2 km de subida pronunciada.', 'Museos de sitio en la cumbre.', 'Opción de descenso en teleférico.'] },
+          { id: 4, nombre: 'Paseo de Los Ahuehuetes', categoria: 'principiante', categoriaTexto: 'Principiante', municipio: 'Camerino Z. Mendoza', imagen: 'Im/Imagen5.jpg', descripcion: 'Sendero a la orilla del Río Blanco sombreado por árboles centenarios.', puntos: ['Completamente plano.', 'Sombra natural contínua.', 'Excelente para días de picnic.'] },
+          { id: 5, nombre: 'Centro Ecoturístico Tekilatlakpan', categoria: 'principiante', categoriaTexto: 'Principiante', municipio: 'Tequila', imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXhkvbwlnxz7KO2o6Vs6SgiV34puVFLyburmlu-fSfuKbnWWdX5fItiBql&s=10', descripcion: 'Senderos en la sierra de Zongolica con miradores, columpios y orquídeas.', puntos: ['Vistas escénicas de montaña.', 'Jardín de conservación de orquídeas.', 'Gastronomía local.'] },
+          { id: 6, nombre: 'Ecoparque Las Sirenas', categoria: 'principiante', categoriaTexto: 'Principiante', municipio: 'Rafael Delgado', imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTBOFD8qaxseA1dEaxEPTNM2_NEvmMNcXeavniWNbypghR8-G_QjEno3cgY&s=10', descripcion: 'Caminata en la confluencia de ríos con andadores arbolados.', puntos: ['Entorno pacífico y arbolado.', 'Área verde para descanso.'] },
+          { id: 7, nombre: '500 Escalones (Superiores)', categoria: 'principiante', categoriaTexto: 'Principiante', municipio: 'Ixtaczoquitlán', imagen: 'Im/Imagen4.jpg', descripcion: 'Miradores superiores hacia el majestuoso cañón del Río Blanco.', puntos: ['Vistas panorámicas a la cascada.', 'Senderos frescos de montaña.'] },
+          { id: 8, nombre: 'Cascada de Atoyac', categoria: 'rios', categoriaTexto: 'Ríos y Cascadas', municipio: 'Atoyac', imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpFIEO6ywKeUZANAHquhU7-TRXnGNk0JLcuMYypV8vZ_l43pdYVdv4rrbo&s=10', descripcion: 'Caminata por vías antiguas hasta una impresionante cascada con poza.', puntos: ['Túnel histórico ferroviario.', 'Caída de agua caudalosa.'] },
+          { id: 9, nombre: 'Manantiales de Tlilapan', categoria: 'rios', categoriaTexto: 'Ríos y Cascadas', municipio: 'Tlilapan', imagen: 'Im/Imagen9.jpg', descripcion: 'Nacimientos de agua cristalina y transparente que brotan de la roca.', puntos: ['Agua helada y pura.', 'Gastronomía de trucha fresca.'] },
+          { id: 10, nombre: 'Cascadas El Paraíso', categoria: 'rios', categoriaTexto: 'Ríos y Cascadas', municipio: 'La Perla', imagen: 'Im/Imagen11.jpg', descripcion: 'Parque ecológico en el bosque de niebla con múltiples caídas de agua.', puntos: ['Bosque de pino y niebla.', 'Sendero fotográfico excelente.'] },
+          { id: 11, nombre: 'Cascadas de Altepexi', categoria: 'rios', categoriaTexto: 'Ríos y Cascadas', municipio: 'Ixtaczoquitlán (Tuxpanguillo)', imagen: 'Im/Imagen12.jpg', descripcion: 'Pozas naturales y saltos de agua en un entorno semi-virgen.', puntos: ['Pozas de agua clara.', 'Entorno pacífico y poco concurrido.'] },
+          { id: 12, nombre: 'Los Sifones', categoria: 'rios', categoriaTexto: 'Ríos y Cascadas', municipio: 'Ixtaczoquitlán', imagen: 'Im/Imagen13.jpg', descripcion: 'Estanques de agua clara ideales para caminatas cortas en familia.', puntos: ['Acceso fácil y seguro.', 'Área para refrescarse.'] },
+          { id: 13, nombre: 'Rincón de las Doncellas', categoria: 'rios', categoriaTexto: 'Ríos y Cascadas', municipio: 'Nogales', imagen: 'Im/Imagen14.jpg', descripcion: 'Nacimientos de agua de tono turquesa en andadores boscosos.', puntos: ['Pozas turquesas cristalinas.', 'Andadores con sombra.'] },
+          { id: 14, nombre: 'Sótano y Cascada de Popocatl', categoria: 'intermedio', categoriaTexto: 'Intermedio', municipio: 'Zongolica', imagen: 'Im/Imagen15.jpg', descripcion: 'Descenso a un cañón para ver una cascada de 60m dentro de una cueva.', puntos: ['Espectáculo subterráneo único.', 'Terreno con humedad y rocas.'] },
+          { id: 15, nombre: 'Cerro de San Cristóbal', categoria: 'intermedio', categoriaTexto: 'Intermedio', municipio: 'Huiloapan de Cuauhtémoc', imagen: 'Im/Imagen16.jpg', descripcion: 'Ascenso constante con panorama completo del valle metropolitano.', puntos: ['Exigencia cardiovascular.', 'Vistas a la crestería.'] },
+          { id: 16, nombre: 'San Miguel Chinela a Jacal', categoria: 'intermedio', categoriaTexto: 'Intermedio', municipio: 'La Perla', imagen: 'https://s0.wklcdn.com/image_95/2877368/124690604/79735854.400x300.jpg', descripcion: 'Senderismo de media montaña a más de 3,000 msnm entre pinos.', puntos: ['Clima alpino fresco.', 'Vistas al Pico de Orizaba.'] },
+          { id: 17, nombre: 'Cerro de San Juan', categoria: 'intermedio', categoriaTexto: 'Intermedio', municipio: 'Coscomatepec', imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_fUT5t-dd3bG-rEmF2A9UbPqXIT250U9ZYZjV0JnGqg&s=10', descripcion: 'Caminata por el bosque de niebla hacia la cima del cerro.', puntos: ['Bosque mesófilo con musgo.', 'Vista al Pueblo Mágico.'] },
+          { id: 18, nombre: 'Puente Wimmer - Las Cumbres', categoria: 'intermedio', categoriaTexto: 'Intermedio', municipio: 'Maltrata', imagen: 'Im/Imagen17.jpg', descripcion: 'Ruta histórica sobre antiguos trazos férreos en las cumbres.', puntos: ['Ingeniería férrea del siglo XIX.', 'Vistas a cañadas profundas.'] },
+          { id: 19, nombre: 'Cerro Tepoztecatl', categoria: 'intermedio', categoriaTexto: 'Intermedio', municipio: 'Mariano Escobedo', imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRt2_MbGP3fbd0IX5QbSCg_GA77bF0JXswVMvEi4UBDAfIgFtQiEmJkNxBk&s=10', descripcion: 'Brechas boscosas y miradores de montaña hacia la sierra.', puntos: ['Vegetación de encino y pino.', 'Ruta tranquila e íntima.'] },
+          { id: 20, nombre: 'Cerro del Gentil', categoria: 'intermedio', categoriaTexto: 'Intermedio', municipio: 'Huiloapan', imagen: 'https://www.alltrails.com/mugen/image/trail-app-router?url=https%3A%2F%2Fimages.alltrails.com%2FeyJidWNrZXQiOiJhc3NldHMuYWxsdHJhaWxzLmNvbSIsImtleSI6InVwbG9hZHMvcGhvdG8vaW1hZ2UvOTMyMzIzODMvNTYzNDU0MWVkZjQ2ZThmNzNkNDFmNTFkNzJhZWFkYTAuanBnIiwiZWRpdHMiOnsidG9Gb3JtYXQiOiJ3ZWJwIiwicmVzaXplIjp7IndpZHRoIjoiMTA4MCIsImhlaWdodCI6IjcwMCIsImZpdCI6ImNvdmVyIn0sInJvdGF0ZSI6bnVsbCwianBlZyI6eyJ0cmVsbGlzUXVhbnRpc2F0aW9uIjp0cnVlLCJvdmVyc2hvb3REZXJpbmdpbmciOnRydWUsIm9wdGltaXNlU2NhbnMiOnRydWUsInF1YW50aXNhdGlvblRhYmxlIjozfX19&w=3840&q=75', descripcion: 'Ascenso empinado por terreno pedregoso hasta la Cruz del Gentil.', puntos: ['Desnivel sostenido de +500m.', 'Excelente entrenamiento físico.'] },
+          { id: 21, nombre: 'Cañón de la Carbonera', categoria: 'avanzado', categoriaTexto: 'Avanzado', municipio: 'Nogales', imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRY2nq-dB9VXAYoo9AhBC2XVcjIPtnnQosNczXg-dae-LfkTTc3TWb_fQU&s=10', descripcion: 'Travesía de cañonismo entre paredes rocosas, pozas y rápel.', puntos: ['Requiere casco y guía técnico.', 'Terreno acuático y resbaladizo.'] },
+          { id: 22, nombre: 'Expedición Popocatl Espeleo', categoria: 'avanzado', categoriaTexto: 'Avanzado', municipio: 'Zongolica', imagen: 'https://mxc.com.mx/wp-content/uploads/2024/08/sotano-popocatl-.jpg', descripcion: 'Descenso técnico con cuerdas al interior de la caverna del Popocatl.', puntos: ['Técnica de rápel obligatoria.', 'Equipo de espeleología.'] },
+          { id: 23, nombre: 'Refugio Fausto González (Pico Orizaba)', categoria: 'avanzado', categoriaTexto: 'Avanzado', municipio: 'La Perla / Calcahualco', imagen: 'https://veracruzadventure.com.mx/wp-content/uploads/2025/06/499914218_1238863721548841_711638011914875403_n.jpg', descripcion: 'Cara sur del volcán Pico de Orizaba a más de 4,400 msnm.', puntos: ['Alta montaña (>4,400 msnm).', 'Aclimatación y equipo técnico.'] }
+        ],
+
+        get rutasFiltradas() {
+          return this.rutas.filter(r => {
+            const coincideFiltro = (this.filtro === 'todas') || (r.categoria === this.filtro);
+            const coincideBusqueda = r.nombre.toLowerCase().includes(this.busqueda.toLowerCase()) || 
+                                     r.municipio.toLowerCase().includes(this.busqueda.toLowerCase());
+            return coincideFiltro && coincideBusqueda;
+          });
+        },
+
+        calcularRecomendaciones() {
+          this.wizardResultados = this.rutas.filter(r => r.categoria === this.wizardData.nivel).slice(0, 4);
+          this.wizardStep = 3;
+        },
+
+        abrirModal(ruta) {
+          this.rutaSeleccionada = ruta;
+          this.modalAbierto = true;
+        },
+
+        abrirModalPorId(id) {
+          const r = this.rutas.find(item => item.id == id);
+          if (r) this.abrirModal(r);
+        },
+
+        cargarEnMapaApp(ruta) {
+          this.modalAbierto = false;
+          const gpsFound = this.rutasConGps.find(r => r.id === ruta.id);
+          if (gpsFound) {
+            this.rutaMapaSeleccionadaId = gpsFound.id;
+            this.cambiarRutaMapa();
+          }
+          document.getElementById('app-mapa').scrollIntoView({ behavior: 'smooth' });
+        },
+
+        initMapaApp() {
+          setTimeout(() => {
+            const r = this.rutaMapaActual;
+            leafletMapInstance = L.map('mapa-wikiloc').setView(r.center, 14);
+
+            tileLayers.osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: '© OpenStreetMap'
+            });
+
+            tileLayers.satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+              attribution: 'Esri World Imagery'
+            });
+
+            tileLayers.topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+              attribution: 'OpenTopoMap'
+            });
+
+            tileLayers.osm.addTo(leafletMapInstance);
+            this.dibujarTrazado(r);
+          }, 300);
+        },
+
+        cambiarCapaMapa(tipo) {
+          this.capaMapa = tipo;
+          if (!leafletMapInstance) return;
+          Object.values(tileLayers).forEach(layer => leafletMapInstance.removeLayer(layer));
+          tileLayers[tipo].addTo(leafletMapInstance);
+        },
+
+        cambiarRutaMapa() {
+          const r = this.rutaMapaActual;
+          if (leafletMapInstance) {
+            leafletMapInstance.setView(r.center, 14);
+            this.dibujarTrazado(r);
+          }
+        },
+
+        dibujarTrazado(r) {
+          if (currentPolyline) leafletMapInstance.removeLayer(currentPolyline);
+          currentMarkers.forEach(m => leafletMapInstance.removeLayer(m));
+          currentMarkers = [];
+
+          currentPolyline = L.polyline(r.gpsTrack, {
+            color: '#10b981',
+            weight: 6,
+            opacity: 0.95
+          }).addTo(leafletMapInstance);
+
+          r.waypoints.forEach(wp => {
+            const m = L.marker([wp.lat, wp.lng]).addTo(leafletMapInstance).bindPopup(`<b>${wp.title}</b>`);
+            currentMarkers.push(m);
+          });
+
+          leafletMapInstance.fitBounds(currentPolyline.getBounds(), { padding: [30, 30] });
+        }
+      }
+    }
+  </script>
+</body>
+</html>
